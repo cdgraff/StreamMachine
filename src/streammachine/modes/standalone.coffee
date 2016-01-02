@@ -185,6 +185,7 @@ module.exports = class StandaloneMode extends require("./base")
                     @log.info "Hand off standalone socket."
                     rpc.request "standalone_handle", null, @handle, (err) =>
                         @log.error "Error sending standalone handle: #{err}" if err
+                        debug "Standalone socket sent: #{err}"
                         @handle.unref()
                         _afterSockets()
 
@@ -192,12 +193,14 @@ module.exports = class StandaloneMode extends require("./base")
                     @log.info "Hand off source socket."
                     rpc.request "source_socket", null, @master.sourcein.server, (err) =>
                         @log.error "Error sending source socket: #{err}" if err
+                        debug "Source socket sent: #{err}"
                         @master.sourcein.server.unref()
                         _afterSockets()
 
                     @log.info "Hand off API socket (if it exists)."
                     rpc.request "api_handle", null, @api_handle, (err) =>
-                        @log.error "Error sending source socket: #{err}" if err
+                        @log.error "Error sending API socket: #{err}" if err
+                        debug "API socket sent: #{err}"
                         @api_handle?.unref()
                         _afterSockets()
 
@@ -251,12 +254,14 @@ module.exports = class StandaloneMode extends require("./base")
                     @_rpc.once "source_socket", (msg,handle,cb) =>
                         @log.info "Source socket is incoming."
                         @master.sourcein.listen handle
+                        debug "Now listening on source socket."
                         cb null
                         aFunc()
 
                     @_rpc.once "standalone_handle", (msg,handle,cb) =>
                         @log.info "Standalone socket is incoming."
                         @handle = @server.listen handle
+                        debug "Now listening on standalone socket."
                         cb null
                         aFunc()
 
@@ -265,8 +270,10 @@ module.exports = class StandaloneMode extends require("./base")
                             debug "Handoff sent API socket and we have API server"
                             @log.info "API socket is incoming."
                             @api_handle = @api_server.listen handle
+                            debug "Now listening on API socket."
                         else
                             @log.info "Handoff sent no API socket"
+                            debug "Handoff sent no API socket."
 
                             if @api_server
                                 debug "Handoff sent no API socket, but we have API server. Listening."

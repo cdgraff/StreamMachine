@@ -49,7 +49,11 @@ module.exports = class Monitoring extends require("events").EventEmitter
                 for stat in statuses
                     # -- update slave responsiveness -- #
 
-                    @master.alerts.update "slave_unresponsive", stat.id, stat.UNRESPONSIVE
+                    if stat.UNRESPONSIVE
+                        @master.alerts.update "slave_unresponsive", stat.id, true
+                        break
+
+                    @master.alerts.update "slave_unresponsive", stat.id, false
 
                     # -- are the rewind buffers synced to master? -- #
 

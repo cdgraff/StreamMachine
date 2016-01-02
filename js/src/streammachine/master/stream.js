@@ -12,7 +12,7 @@ Rewind = require('../rewind_buffer');
 
 FileSource = require("../sources/file");
 
-ProxySource = require('../sources/proxy_room');
+ProxySource = require('../sources/proxy');
 
 TranscodingSource = require("../sources/transcoding");
 
@@ -47,7 +47,8 @@ module.exports = Stream = (function(_super) {
     codec: null,
     ffmpeg_args: null,
     stream_key: null,
-    impression_delay: 5000
+    impression_delay: 5000,
+    log_interval: 30000
   };
 
   function Stream(key, log, mount, opts) {
@@ -153,7 +154,7 @@ module.exports = Stream = (function(_super) {
         }
       }).call(this);
       if (newsource) {
-        newsource.on("connect", (function(_this) {
+        newsource.once("connect", (function(_this) {
           return function() {
             return _this.addSource(newsource, function(err) {
               if (err) {

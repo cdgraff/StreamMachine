@@ -65,7 +65,9 @@ module.exports = Master = (function(_super) {
       this.log.debug("Registering config_update listener");
       this.on("config_update", (function(_this) {
         return function() {
-          return _this.redis_config._update(_this.config());
+          return _this.redis_config._update(_this.config(), function(err) {
+            return _this.log.info("Redis config update saved: " + err);
+          });
         };
       })(this));
     } else {
@@ -247,7 +249,8 @@ module.exports = Master = (function(_super) {
     }), mount, _.extend(opts, {
       hls: this.options.hls,
       preroll: opts.preroll != null ? opts.preroll : this.options.preroll,
-      transcoder: opts.transcoder != null ? opts.transcoder : this.options.transcoder
+      transcoder: opts.transcoder != null ? opts.transcoder : this.options.transcoder,
+      log_interval: opts.log_interval != null ? opts.log_interval : this.options.log_interval
     }));
     if (stream) {
       stream.on("config", (function(_this) {

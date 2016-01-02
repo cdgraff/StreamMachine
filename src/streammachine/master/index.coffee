@@ -55,7 +55,8 @@ module.exports = class Master extends require("events").EventEmitter
             # Persist changed configuration to Redis
             @log.debug "Registering config_update listener"
             @on "config_update", =>
-                @redis_config._update @config()
+                @redis_config._update @config(), (err) =>
+                    @log.info "Redis config update saved: #{err}"
 
         else
             # -- look for hard-coded configuration -- #
@@ -224,6 +225,7 @@ module.exports = class Master extends require("events").EventEmitter
             hls:        @options.hls
             preroll:    if opts.preroll? then opts.preroll else @options.preroll
             transcoder: if opts.transcoder? then opts.transcoder else @options.transcoder
+            log_interval: if opts.log_interval? then opts.log_interval else @options.log_interval
 
         if stream
             # attach a listener for configs

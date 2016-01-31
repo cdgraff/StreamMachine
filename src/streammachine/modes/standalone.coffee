@@ -72,19 +72,18 @@ module.exports = class StandaloneMode extends require("./base")
         # -- Proxy data events from master -> slave -- #
 
         @master.on "streams", (streams) =>
+            debug "Standalone saw master streams event"
             @slave.once "streams", =>
-                for k,v of streams
-                    @log.debug "looking to attach stream #{k}", streams:@streams[k]?, slave_streams:@slave.streams[k]?
-                    if @streams[k]
-                        # got it already
+                debug "Standalone got followup slave streams event"
+                for k,v of @master.streams
+                    debug "Checking stream #{k}"
 
+                    if @slave.streams[k]?
+                        debug "Mapping master -> slave for #{k}"
+                        @log.debug "mapping master -> slave on #{k}"
+                        @slave.streams[k].useSource v if !@slave.streams.source
                     else
-                        if @slave.streams[k]?
-                            @log.debug "mapping master -> slave on #{k}"
-                            @slave.streams[k].useSource v
-                            @streams[k] = true
-                        else
-                            @log.error "Unable to map master -> slave for #{k}"
+                        @log.error "Unable to map master -> slave for #{k}"
 
             @slave.configureStreams @master.config().streams
 
@@ -171,6 +170,7 @@ module.exports = class StandaloneMode extends require("./base")
                         @slave.ejectListeners (obj,h,lcb) =>
                             debug "Sending a listener...", obj
                             @_rpc.request "stream_listener", obj, h, (err) =>
+                                debug "Listener transfer error: #{err}" if err
                                 lcb()
                         , (err) =>
                             @log.error "Error sending listeners during handoff: #{err}" if err

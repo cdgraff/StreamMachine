@@ -97,25 +97,25 @@ module.exports = StandaloneMode = (function(_super) {
     }
     this.master.on("streams", (function(_this) {
       return function(streams) {
+        debug("Standalone saw master streams event");
         _this.slave.once("streams", function() {
-          var k, v, _results;
+          var k, v, _ref, _results;
+          debug("Standalone got followup slave streams event");
+          _ref = _this.master.streams;
           _results = [];
-          for (k in streams) {
-            v = streams[k];
-            _this.log.debug("looking to attach stream " + k, {
-              streams: _this.streams[k] != null,
-              slave_streams: _this.slave.streams[k] != null
-            });
-            if (_this.streams[k]) {
-
-            } else {
-              if (_this.slave.streams[k] != null) {
-                _this.log.debug("mapping master -> slave on " + k);
-                _this.slave.streams[k].useSource(v);
-                _results.push(_this.streams[k] = true);
+          for (k in _ref) {
+            v = _ref[k];
+            debug("Checking stream " + k);
+            if (_this.slave.streams[k] != null) {
+              debug("Mapping master -> slave for " + k);
+              _this.log.debug("mapping master -> slave on " + k);
+              if (!_this.slave.streams.source) {
+                _results.push(_this.slave.streams[k].useSource(v));
               } else {
-                _results.push(_this.log.error("Unable to map master -> slave for " + k));
+                _results.push(void 0);
               }
+            } else {
+              _results.push(_this.log.error("Unable to map master -> slave for " + k));
             }
           }
           return _results;
@@ -202,6 +202,9 @@ module.exports = StandaloneMode = (function(_super) {
               return _this.slave.ejectListeners(function(obj, h, lcb) {
                 debug("Sending a listener...", obj);
                 return _this._rpc.request("stream_listener", obj, h, function(err) {
+                  if (err) {
+                    debug("Listener transfer error: " + err);
+                  }
                   return lcb();
                 });
               }, function(err) {

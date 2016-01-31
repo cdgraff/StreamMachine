@@ -123,13 +123,14 @@ module.exports = Source = (function(_super) {
   };
 
   Source.prototype.disconnect = function(cb) {
-    var _ref;
+    var _ref, _ref1;
     if ((_ref = this.log) != null) {
       _ref.debug("Setting _isDisconnected");
     }
     this._isDisconnected = true;
     this.chunker.removeAllListeners();
-    return this.parser.removeAllListeners();
+    this.parser.removeAllListeners();
+    return (_ref1 = this._pingData) != null ? _ref1.kill() : void 0;
   };
 
   Source.FrameChunker = (function(_super1) {
@@ -141,6 +142,7 @@ module.exports = Source = (function(_super) {
       this._chunk_queue = [];
       this._queue_duration = 0;
       this._remainders = 0;
+      this._target = this.duration;
       this._last_ts = null;
       FrameChunker.__super__.constructor.call(this, {
         objectMode: true
@@ -157,7 +159,8 @@ module.exports = Source = (function(_super) {
       var buf, duration, frames, len, o, simple_dur, simple_rem, ts, _i, _len, _ref;
       this._chunk_queue.push(obj);
       this._queue_duration += obj.header.duration;
-      if (this._queue_duration > this.duration) {
+      if (this._queue_duration > this._target) {
+        this._target = this._target + (this.duration - this._queue_duration);
         len = 0;
         _ref = this._chunk_queue;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {

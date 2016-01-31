@@ -290,7 +290,7 @@ module.exports = Master = (function(_super) {
     }
     if (stream = this._startStream(opts.key, this.source_mounts[mount_key], opts)) {
       this.emit("config_update");
-      this.emit("streams");
+      this.emit("streams", this.streams);
       return typeof cb === "function" ? cb(null, stream.status()) : void 0;
     } else {
       return typeof cb === "function" ? cb("Stream failed to start.") : void 0;
@@ -332,6 +332,7 @@ module.exports = Master = (function(_super) {
     delete this.streams[stream.key];
     stream.destroy();
     this.emit("config_update");
+    this.emit("streams", this.streams);
     return typeof cb === "function" ? cb(null, "OK") : void 0;
   };
 
@@ -386,10 +387,14 @@ module.exports = Master = (function(_super) {
 
   Master.prototype.removeMount = function(mount, cb) {
     this.log.info("removeMount called for " + mount.key);
+    if (mount.listeners("data").length > 0) {
+      cb(new Error("Cannot remove source mount until all streams are removed"));
+      return false;
+    }
     delete this.source_mounts[mount.key];
     mount.destroy();
     this.emit("config_update");
-    return typeof cb === "function" ? cb(null, "OK") : void 0;
+    return cb(null, "OK");
   };
 
   Master.prototype.streamsInfo = function() {
@@ -692,7 +697,10 @@ module.exports = Master = (function(_super) {
     return stream.once("destroy", (function(_this) {
       return function() {
         var _ref;
-        return (_ref = _this.proxies[stream.key]) != null ? _ref.destroy() : void 0;
+        if ((_ref = _this.proxies[stream.key]) != null) {
+          _ref.destroy();
+        }
+        return delete _this.proxies[stream.key];
       };
     })(this));
   };
@@ -767,7 +775,10 @@ module.exports = Master = (function(_super) {
 
     StreamProxy.prototype.destroy = function() {
       this.stream.removeListener("data", this.dataFunc);
-      return this.stream.removeListener("hls_snapshot", this.hlsSnapFunc);
+      this.stream.removeListener("hls_snapshot", this.hlsSnapFunc);
+      this.stream = null;
+      this.emit("destroy");
+      return this.removeAllListeners();
     };
 
     return StreamProxy;
